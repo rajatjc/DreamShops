@@ -6,12 +6,10 @@ import com.dailycodework.dreamshops.model.Product;
 import com.dailycodework.dreamshops.repository.CategoryRepository;
 import com.dailycodework.dreamshops.repository.ProductRepository;
 import com.dailycodework.dreamshops.request.AddProductRequest;
-import com.dailycodework.dreamshops.service.category.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,12 +20,11 @@ public class ProductService implements IProductService {
 
     @Override
     public Product addProducts(AddProductRequest request) {
-        //check if category is found in the DB
-        //If yes, then  set it as a new product category
-        //if no, then save it as a new category
-        //then set as the new product category
-        Category category = Optional.ofNullable(categoryRepository.findByName);
-        return null;
+        // Use the request's category if it already exists, otherwise create it.
+        String categoryName = request.getCategory().getName();
+        Category category = categoryRepository.findByName(categoryName)
+                .orElseGet(() -> categoryRepository.save(new Category(categoryName)));
+        return productRepository.save(createProduct(request, category));
     }
 
     private Product createProduct(AddProductRequest request, Category category) {
