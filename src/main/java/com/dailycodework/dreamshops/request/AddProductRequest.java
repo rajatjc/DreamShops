@@ -1,20 +1,19 @@
 package com.dailycodework.dreamshops.request;
 
-import com.dailycodework.dreamshops.model.Category;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import lombok.Data;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-@Data
-public class AddProductRequest {
-    private Long id;
-    private String name;
-    private String brand;
-    private BigDecimal price;
-    private int inventory;
-    private String description;
-    private Category category;
+/** Body of POST /products and PUT /products/{id}. The category is created if it doesn't exist yet. */
+public record AddProductRequest(
+        @NotBlank @Size(max = 120) String name,
+        @NotBlank @Size(max = 60) String brand,
+        @NotNull @DecimalMin(value = "0.00", inclusive = false) BigDecimal price,
+        @NotNull @PositiveOrZero Integer inventory,
+        @Size(max = 2000) String description,
+        @NotBlank @Size(max = 60) String category) {
 }
