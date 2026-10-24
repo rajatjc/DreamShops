@@ -1,9 +1,11 @@
 package com.dailycodework.dreamshops.service.product;
 
+import com.dailycodework.dreamshops.dto.ProductDto;
 import com.dailycodework.dreamshops.exceptions.ResourceNotFoundException;
 import com.dailycodework.dreamshops.model.Category;
 import com.dailycodework.dreamshops.model.Product;
 import com.dailycodework.dreamshops.repository.CategoryRepository;
+import com.dailycodework.dreamshops.repository.ImageRepository;
 import com.dailycodework.dreamshops.repository.ProductRepository;
 import com.dailycodework.dreamshops.request.AddProductRequest;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,8 @@ class ProductServiceTest {
     ProductRepository productRepository;
     @Mock
     CategoryRepository categoryRepository;
+    @Mock
+    ImageRepository imageRepository;
     @InjectMocks
     ProductService productService;
 
@@ -40,10 +44,11 @@ class ProductServiceTest {
         when(categoryRepository.findByNameIgnoreCase("phones")).thenReturn(Optional.of(phones));
         when(productRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
-        Product product = productService.addProduct(request("phones"));
+        ProductDto product = productService.addProduct(request("phones"));
 
-        assertThat(product.getCategory()).isSameAs(phones);
-        assertThat(product.getName()).isEqualTo("Galaxy S24");
+        assertThat(product.category().name()).isEqualTo("Phones");
+        assertThat(product.name()).isEqualTo("Galaxy S24");
+        assertThat(product.images()).isEmpty();
         verify(categoryRepository, never()).save(any());
     }
 
@@ -53,9 +58,9 @@ class ProductServiceTest {
         when(categoryRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         when(productRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
-        Product product = productService.addProduct(request("Tablets"));
+        ProductDto product = productService.addProduct(request("Tablets"));
 
-        assertThat(product.getCategory().getName()).isEqualTo("Tablets");
+        assertThat(product.category().name()).isEqualTo("Tablets");
         verify(categoryRepository).save(any(Category.class));
     }
 
@@ -63,7 +68,7 @@ class ProductServiceTest {
     void missingProductThrowsNotFound() {
         when(productRepository.findById(42L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> productService.getProductById(42L))
+        assertThatThrownBy(() -> productService.getProduct(42L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("42");
         assertThatThrownBy(() -> productService.deleteProductById(42L))
@@ -78,12 +83,12 @@ class ProductServiceTest {
         when(productRepository.findById(7L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findByNameIgnoreCase("Phones")).thenReturn(Optional.of(phones));
 
-        Product updated = productService.updateProduct(7L, request("Phones"));
+        productService.updateProduct(7L, request("Phones"));
 
-        assertThat(updated.getName()).isEqualTo("Galaxy S24");
-        assertThat(updated.getBrand()).isEqualTo("Samsung");
-        assertThat(updated.getPrice()).isEqualByComparingTo("799.99");
-        assertThat(updated.getInventory()).isEqualTo(5);
-        assertThat(updated.getCategory()).isSameAs(phones);
+        assertThat(existing.getName()).isEqualTo("Galaxy S24");
+        assertThat(existing.getBrand()).isEqualTo("Samsung");
+        assertThat(existing.getPrice()).isEqualByComparingTo("799.99");
+        assertThat(existing.getInventory()).isEqualTo(5);
+        assertThat(existing.getCategory()).isSameAs(phones);
     }
 }

@@ -1,9 +1,13 @@
 package com.dailycodework.dreamshops.service.product;
 
+import com.dailycodework.dreamshops.dto.ImageDto;
+import com.dailycodework.dreamshops.dto.PageDto;
+import com.dailycodework.dreamshops.dto.ProductDto;
 import com.dailycodework.dreamshops.exceptions.ResourceNotFoundException;
 import com.dailycodework.dreamshops.model.Category;
 import com.dailycodework.dreamshops.model.Product;
 import com.dailycodework.dreamshops.repository.CategoryRepository;
+import com.dailycodework.dreamshops.repository.ImageRepository;
 import com.dailycodework.dreamshops.repository.ProductRepository;
 import com.dailycodework.dreamshops.request.AddProductRequest;
 import jakarta.persistence.criteria.Predicate;
@@ -16,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,39 +29,39 @@ public class ProductService implements IProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ImageRepository imageRepository;
 
     @Override
     @Transactional
-    public Product addProduct(AddProductRequest request) {
+    public ProductDto addProduct(AddProductRequest request) {
         Product product = new Product();
         apply(product, request);
-        return productRepository.save(product);
+        return toDto(productRepository.save(product));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Product getProductById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product " + id + " not found"));
+    public ProductDto getProduct(Long id) {
+        return toDto(findProduct(id));
     }
 
     @Override
     @Transactional
-    public Product updateProduct(Long id, AddProductRequest request) {
-        Product product = getProductById(id);
+    public ProductDto updateProduct(Long id, AddProductRequest request) {
+        Product product = findProduct(id);
         apply(product, request);
-        return product;
+        return toDto(product);
     }
 
     @Override
     @Transactional
     public void deleteProductById(Long id) {
-        productRepository.delete(getProductById(id));
+        productRepository.delete(findProduct(id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Product> searchProducts(String category, String brand, String name, Pageable pageable) {
+    public PageDto<ProductDto> searchProducts(String category, String brand, String name, Pageable pageable) {
         Specification<Product> matches = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (category != null && !category.isBlank()) {
@@ -69,7 +75,28 @@ public class ProductService implements IProductService {
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
-        return productRepository.findAll(matches, pageable);
+        Page<Product> page = productRepository.findAll(matches, pageable);
+        Map<Long, List<ImageDto>> images = imagesFor(page.getContent());
+        return PageDto.from(page, product -> ProductDto.from(product, images.getOrDefault(product.getId(), List.of())));
+    }
+
+    private Product findProduct(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product " + id + " not found"));
+    }
+
+    private ProductDto toDto(Product product) {
+        return ProductDto.from(product, imagesFor(List.of(product)).getOrDefault(product.getId(), List.of()));
+    }
+
+    /** One query for the image metadata of all the given products, grouped by product id. */
+    private Map<Long, List<ImageDto>> imagesFor(List<Product> products) {
+        List<Long> ids = products.stream().map(Product::getId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return imageRepository.findSummariesByProductIds(ids).stream()
+                .collect(Collectors.groupingBy(ImageDto::productId));
     }
 
     private void apply(Product product, AddProductRequest request) {
