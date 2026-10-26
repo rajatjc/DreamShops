@@ -6,6 +6,7 @@ import com.dailycodework.dreamshops.dto.ProductDto;
 import com.dailycodework.dreamshops.exceptions.ResourceNotFoundException;
 import com.dailycodework.dreamshops.model.Category;
 import com.dailycodework.dreamshops.model.Product;
+import com.dailycodework.dreamshops.repository.CartItemRepository;
 import com.dailycodework.dreamshops.repository.CategoryRepository;
 import com.dailycodework.dreamshops.repository.ImageRepository;
 import com.dailycodework.dreamshops.repository.ProductRepository;
@@ -30,6 +31,7 @@ public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ImageRepository imageRepository;
+    private final CartItemRepository cartItemRepository;
 
     @Override
     @Transactional
@@ -56,6 +58,10 @@ public class ProductService implements IProductService {
     @Override
     @Transactional
     public void deleteProductById(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product " + id + " not found");
+        }
+        cartItemRepository.deleteByProductId(id); // past orders keep their own copy of the product's details
         productRepository.delete(findProduct(id));
     }
 

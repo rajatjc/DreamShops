@@ -4,6 +4,7 @@ import com.dailycodework.dreamshops.dto.ProductDto;
 import com.dailycodework.dreamshops.exceptions.ResourceNotFoundException;
 import com.dailycodework.dreamshops.model.Category;
 import com.dailycodework.dreamshops.model.Product;
+import com.dailycodework.dreamshops.repository.CartItemRepository;
 import com.dailycodework.dreamshops.repository.CategoryRepository;
 import com.dailycodework.dreamshops.repository.ImageRepository;
 import com.dailycodework.dreamshops.repository.ProductRepository;
@@ -31,6 +32,8 @@ class ProductServiceTest {
     CategoryRepository categoryRepository;
     @Mock
     ImageRepository imageRepository;
+    @Mock
+    CartItemRepository cartItemRepository;
     @InjectMocks
     ProductService productService;
 

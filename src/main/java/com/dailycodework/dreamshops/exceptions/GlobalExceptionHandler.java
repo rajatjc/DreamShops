@@ -3,6 +3,7 @@ package com.dailycodework.dreamshops.exceptions;
 import com.dailycodework.dreamshops.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +31,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiResponse> stateConflict(IllegalStateException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(e.getMessage(), null));
+    }
+
+    /** Two requests changed the same row at once (e.g. two checkouts taking the last items); retrying sees the new state. */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse> concurrentUpdate(ObjectOptimisticLockingFailureException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse("Someone else changed this at the same time; please try again", null));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

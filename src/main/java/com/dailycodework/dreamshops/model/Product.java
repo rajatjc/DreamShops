@@ -25,6 +25,11 @@ public class Product {
     @Column(length = 2000)
     private String description;
 
+    // Optimistic lock: if two checkouts take stock from the same product at once, the second fails
+    // instead of overselling.
+    @Version
+    private Long version;
+
     // No cascade: a category outlives any one of its products.
     @ManyToOne(optional = false)
     @JoinColumn(name = "category_id")
