@@ -1,0 +1,36 @@
+# docker compose up --build    -> API on http://localhost:9193, Swagger UI at /swagger-ui.html
+# docker compose up db         -> just PostgreSQL, for running the app from your IDE
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: dreamshops
+      POSTGRES_USER: dreamshops
+      POSTGRES_PASSWORD: dreamshops
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dreamshops -d dreamshops"]
+      interval: 2s
+      retries: 30
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/dreamshops
+      DB_USERNAME: dreamshops
+      DB_PASSWORD: dreamshops
+      # Change these three before using this anywhere but your own machine.
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-me-please}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@dreamshops.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-password}
+    ports:
+      - "9193:9193"
+
+volumes:
+  db-data:
