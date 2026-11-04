@@ -19,6 +19,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # Stay on the Java 21 LTS. Move up by hand when you choose to.
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker-compose
     directory: /
@@ -27,6 +31,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # Postgres 18 stores its data in a different directory, so the volume mount has to change first.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
